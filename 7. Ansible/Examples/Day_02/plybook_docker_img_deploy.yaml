@@ -1,0 +1,32 @@
+---
+- name: Deploy Docker container
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure Docker is installed
+      ansible.builtin.package:
+        name: docker.io
+        state: present
+      when: ansible_facts['distribution'] == "Ubuntu"
+
+    - name: Start and enable Docker service
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Pull Docker image
+      community.docker.docker_image:
+        name: dibyendubiswas1998/chatapp
+        tag: "latest"
+        source: pull
+
+    - name: Run Docker container with port mapping
+      community.docker.docker_container:
+        name: "my_container"
+        image: dibyendubiswas1998/chatapp
+        state: started
+        restart_policy: always
+        published_ports:
+          - "8080:8080"
+        detach: true

@@ -98,3 +98,47 @@
     ```bash
         ansible -i inventory_1.ini -m shell -a "sudo ls /etc/" all
     ```
+
+## Playbook:
+* **Ansible Playbook:** https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_intro.html
+* **Ansible Module:** https://docs.ansible.com/ansible/latest/collections/ansible/builtin/index.html#description
+* Commnad to execute Playbook:
+    ```bash
+        ansible-playbook -i /path/inventory.ini first_playbook.yaml 
+    ```
+
+## Ansible Roles:
+* create a role named **test**:
+    ```bash
+        ansible-galaxy role init test
+    ```
+* add tasks to the role **test/tasks**
+    ```yaml
+        ---
+        # tasks file for test
+        - name: Install apache httpd
+        ansible.builtin.apt:
+            name: apache2
+            state: present
+            update_cache: yes    
+        - name: Copy file with owner and permissions
+        ansible.builtin.copy:
+            src: files/index.html
+            dest: /var/www/html
+            owner: root
+            group: root
+            mode: '0644'
+    ```
+* add **index.html** file to the role **test.files**
+* update the playbook
+    ```yaml
+        ---
+        - hosts: all
+        become: true
+        roles:
+            - test
+    ```
+* Run the Commands:
+    ```bash
+        ansible-playbook -i inventory.ini playbook.yaml 
+    ```
