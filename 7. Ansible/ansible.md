@@ -142,3 +142,50 @@
     ```bash
         ansible-playbook -i inventory.ini playbook.yaml 
     ```
+
+## Ansible Galaxy:
+* **Ansible Role Action:**
+    ```bash
+        ansible-galaxy -h # Perform various Role and Collection related operations
+        # Get the role action info
+        ansible-galaxy role -h
+    ```
+    * **init**       Initialize new role with the base structure of a role.
+    * **remove**     Delete roles from roles_path.
+    * **delete**     Removes the role from Galaxy. It does not remove or alter the actual GitHub repository.
+    * **list**       Show the name and version of each role installed in the roles_path.
+    * **search**     Search the Galaxy database by tags, platforms, author and multiple keywords.
+    * **import**     Import a role into a galaxy server
+    * **setup**      Manage the integration between Galaxy and the given source.
+    * **info**       View more details about a specific role.
+    * **install**    Install role(s) from file(s), URL(s) or Ansible Galaxy
+
+* Install a roles from Ansible Galaxy:
+    * Install docker role:
+        ```bash
+            ansible-galaxy role install bsmeding.docker
+        ```
+    * Find the roles path:
+        ```bash
+            ls ~/.ansible/roles/
+            # bsmeding.docker
+        ```
+    * Creat a **docker_playbook.yaml** and mention the specific role:
+        ```yaml
+            ---
+            - hosts: all
+            become: true
+            roles:
+                - bsmeding.docker
+        ```
+    * Run the playbook:
+        ```bash
+            ansible-playbook -i inventory.ini docker_playbook.yaml
+        ```
+* Push your custom role into Ansible Galaxy:
+    * Push all the role related stuff to GitHub
+    * Come to CMD or terminal of Control Node:
+        * Execute the command:
+            ```bash
+                ansible-galaxy import <github-user-name> <github-repo-name> --token <ansible-api-token>
+            ```
