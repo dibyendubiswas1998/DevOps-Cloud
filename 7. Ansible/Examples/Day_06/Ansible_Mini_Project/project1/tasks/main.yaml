@@ -1,0 +1,23 @@
+---
+# tasks file for project1
+
+- name: Create EC2 Instance
+  vars:
+    type: t2.micro
+  amazon.aws.ec2_instance:
+    name: "{{ item.name }}"
+    key_name: "ansible-project-1" # provide key-pair from ec2
+    # vpc_subnet_id: subnet-013744e41e8088axx
+    instance_type: "{{ type }}"
+    security_group: default
+    region: ap-south-1
+    aws_access_key: "{{aws_access_key}}"  # From vault as defined
+    aws_secret_key: "{{aws_secrect_key}}"  # From vault as defined      
+    network:
+      assign_public_ip: true
+    image_id: "{{ item.image }}"
+  loop:
+    - {image: "ami-0dee22c13ea7a9a67", name: ec2-instance-ubuntu-1} # Ubuntu
+    - {image: "ami-0dee22c13ea7a9a67", name: ec2-instance-ubuntu-2} # Ubuntu
+    - {image: "ami-08bf489a05e916bbd", name: ec2-instance-Amazon-linux-1} # Amazon Linux
+ 

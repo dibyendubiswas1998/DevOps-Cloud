@@ -1,0 +1,6 @@
+--- 
+# Play 1:
+- hosts: localhost
+  connection: local
+  roles:
+    - project1
