@@ -1,0 +1,19 @@
+---
+# tasks file for ec2
+- name: start an instance with a public IP address
+  vars:
+    type: t2.micro
+  amazon.aws.ec2_instance:
+    name: "ansible-managed-node-instance"
+    # key_name: "prod-ssh-key"
+    # vpc_subnet_id: subnet-013744e41e8088axx
+    instance_type: "{{ type }}"
+    security_group: default
+    region: us-east-1
+    aws_access_key: "{{ec2_access_key}}"  # From vault as defined
+    aws_secret_key: "{{ec2_secret_key}}"  # From vault as defined      
+    network:
+      assign_public_ip: true
+    image_id: ami-04b70fa74e45c3917
+    tags:
+      Environment: Testing
