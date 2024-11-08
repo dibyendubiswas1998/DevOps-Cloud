@@ -189,3 +189,148 @@
             ```bash
                 ansible-galaxy import <github-user-name> <github-repo-name> --token <ansible-api-token>
             ```
+
+## Ansible Collection:
+* Install AWS Collection:
+    ```bash
+        ansible-galaxy collecction install amazon.aws
+        ansible-galaxy collection install amazon.aws --force # install latest version
+        pip install boto3 # you nedd to install some packages  also
+        sudo pip3 install boto3 --break-system-packages
+    ```
+* Create Resources on AWS:
+    * Write **ec2_creation.yaml** file
+        ```yaml
+            --- 
+            - hosts: localhost # localhost means, in your control node
+            connection: local # this tells ansible that playbook has to be execute on same machine (local)
+            tasks:
+            - name: start an instance with a public IP address
+                amazon.aws.ec2_instance:
+                name: "ansible-managed-node-instance"
+                # key_name: "prod-ssh-key"
+                # vpc_subnet_id: subnet-013744e41e8088axx
+                instance_type: t2.micro
+                security_group: default
+                region: us-east-1
+                aws_access_key: "{{ec2_access_key}}"  # From vault as defined
+                aws_secret_key: "{{ec2_secret_key}}"  # From vault as defined      
+                network:
+                    assign_public_ip: true
+                image_id: ami-04b70fa74e45c3917
+                tags:
+                    Environment: Testing
+        ```
+    * Or, create a custom role for creation of ec2:
+        ```bash
+            ansible-galaxy role init ec2
+        ```
+        * Mention the tasks, and mention the role in ec2_creation.yaml file
+            ```yaml
+                ---
+                # tasks file for ec2
+                - name: start an instance with a public IP address
+                    amazon.aws.ec2_instance:
+                        name: "ansible-managed-node-instance"
+                        # key_name: "prod-ssh-key"
+                        # vpc_subnet_id: subnet-013744e41e8088axx
+                        instance_type: t2.micro
+                        security_group: default
+                        region: us-east-1
+                        aws_access_key: "{{ec2_access_key}}"  # From vault as defined
+                        aws_secret_key: "{{ec2_secret_key}}"  # From vault as defined      
+                        network:
+                            assign_public_ip: true
+                        image_id: ami-04b70fa74e45c3917
+                        tags:
+                            Environment: Testing
+            ```
+    * Add AWS Secrect and Access Key in Ansible Vault:
+        * Setup Vault:
+            * Create a Password for Vault
+                ```bash
+                    openssl rand --base64 2048 > vault.pass
+                ```
+            * Create a Ansible-Vault
+                ```bash
+                    ansible-vault create group_vars/all/pass.yml --vault-password-file vault.pass # create
+
+                    ansible-vault edit group_vars/all/pass.yml --vault-password-file vault.pass # edit
+                ```
+            * After that tou add Access and Secrect key or others secrects in these valut.
+    * Now Create resource on AWS:
+        ```bash
+            ansible-playbook -i inventory.ini ec2_creation/ec2_creation.yaml --vault-password-file vault.pass
+        ```
+
+## Ansible Varibales:
+* tasks in role:
+    ```yaml
+        # tasks file for ec2
+        - name: start an instance with a public IP address
+            amazon.aws.ec2_instance:
+                name: "ansible-managed-node-instance"
+                # key_name: "prod-ssh-key"
+                # vpc_subnet_id: subnet-013744e41e8088axx
+                instance_type: "{{ type }}" # pass the vars using jinja2 template
+                security_group: default
+                region: us-east-1
+                aws_access_key: "{{ec2_access_key}}"  # From vault as defined
+                aws_secret_key: "{{ec2_secret_key}}"  # From vault as defined      
+                network:
+                    assign_public_ip: true
+                image_id: ami-04b70fa74e45c3917
+                tags:
+                    Environment: Testing
+    ```
+* Store or write variables in **vars** (heighest priority) or any 22 places:
+    * https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html
+* Dynamically pass the extra variables:
+    ```bash
+        ansible-playbook -i inventory.ini ec2_creation/ec2_creation.yaml --vault-password-file vault.pass -e type=t2.micro
+        # here extra vars has heighest priority.
+        # default (in role) has lowest priority
+    ```
+* You can define the variables in **tasks** for every play like (best practice):
+    ```yaml
+        # tasks file for ec2
+        - name: start an instance with a public IP address
+            vars:
+                type: t2.micro
+            amazon.aws.ec2_instance:
+                name: "ansible-managed-node-instance"
+                # key_name: "prod-ssh-key"
+                # vpc_subnet_id: subnet-013744e41e8088axx
+                instance_type: "{{ type }}" # pass the vars using jinja2 template
+                security_group: default
+                region: us-east-1
+                aws_access_key: "{{ec2_access_key}}"  # From vault as defined
+                aws_secret_key: "{{ec2_secret_key}}"  # From vault as defined      
+                network:
+                    assign_public_ip: true
+                image_id: ami-04b70fa74e45c3917
+                tags:
+                    Environment: Testing
+        
+        # Another Play
+        - name: start an instance with a public IP address
+            vars:
+                type: t2.xlarge
+            amazon.aws.ec2_instance:
+                name: "ansible-managed-node-instance"
+                # key_name: "prod-ssh-key"
+                # vpc_subnet_id: subnet-013744e41e8088axx
+                instance_type: "{{ type }}" # pass the vars using jinja2 template
+                security_group: default
+                region: us-east-1
+                aws_access_key: "{{ec2_access_key}}"  # From vault as defined
+                aws_secret_key: "{{ec2_secret_key}}"  # From vault as defined      
+                network:
+                    assign_public_ip: true
+                image_id: ami-04b70fa74e45c3917
+                tags:
+                    Environment: Testing
+    ```
+* Another oone is Create vars in **group_vars/all/** directory:
+    * for app hosts, create **group_vars/all/app.yaml**
+    * for db hosts, create **group_vars/all/db.yaml**
