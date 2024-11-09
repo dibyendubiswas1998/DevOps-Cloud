@@ -334,3 +334,111 @@
 * Another oone is Create vars in **group_vars/all/** directory:
     * for app hosts, create **group_vars/all/app.yaml**
     * for db hosts, create **group_vars/all/db.yaml**
+
+## Error Handling:
+* Suppose you have 3 different managed nodes and 4 different tasks in ansible.
+    * If first task is failed all the managed nodes then reset of tasks are not executed.
+    * If first task is failed in first managed node, then it might be all the tasks are executed rest of managed nodes.
+* use **`ignore_errors:` `yes`**
+    ```yaml
+        ---
+        - hosts: all
+          become: true
+
+          tasks:
+            - name: Install security updates
+              ansible.builtin.apt:
+                name: "{{ item }}"
+                state: latest
+              loop:
+                - openssl
+                - openssh
+              ignore_errors: yes 
+
+            - name: Check if docker is installed
+              ansible.builtin.command: docker --version
+              register: output
+              ignore_errors: yes    
+            
+            - ansible.builtin.debug:
+                var: output
+            
+            - name: Install docker
+              ansible.builtin.apt:
+                name: docker.io
+                state: present
+              when: output.failed
+    ```
+* Execute the command:
+    ```bash
+        ansible-playbook -i inventory.ini playbook.yaml
+    ```
+
+## Ansible Vault:
+* Command:
+    ```bash
+        ansible-vault
+    ```
+    * Vault Operations:
+        * **create**          Create new vault encrypted file
+        * **decrypt**         Decrypt vault encrypted file
+        * **edit**            Edit vault encrypted file
+        * **view**            View vault encrypted file
+        * **encrypt**         Encrypt YAML file
+        * **encrypt_string**  Encrypt a string
+        * **rekey**           Re-key a vault encrypted file
+
+* Setup Vault:
+    * Create a Password for Vault
+        ```bash
+            openssl rand --base64 2048 > vault.pass
+        ```
+    * Create a Ansible-Vault
+        ```bash
+            ansible-vault create group_vars/all/pass.yml --vault-password-file vault.pass # create
+            # Add the secrects in this Ansible vault
+
+            ansible-vault edit group_vars/all/pass.yml --vault-password-file vault.pass # edit
+            # Edit the secrects in these vault.
+
+            # view the Secrects in this vault
+            ansible-vault view group_vars/all/pass.yml --vault-password-file vault.pass
+        ```
+    * After that you add Access and Secrect key or others secrects in these valut.
+
+* Suppose you have a secrects in **secrects.yaml** file, then how to encrypt, here are the process:
+    * Create a **secrects.yaml** file and add the secrects.
+    * Create a password for vault
+        ```bash
+            openssl rand --base64 2048 > vault.pass
+        ```
+    * Encrypy the secrect, **secrects.yaml**:
+        ```bash
+            ansible-vault encrypt secrects.yaml --vault-password-file vault.pass
+        ```
+    * Thats how you encrypts the existing file, which will be secure.
+    * **Now** for decrypt the **secrects.yaml** file, you can use below command with password:
+        ```bash
+            ansible-vault decrypt secrects.yaml --vault-password-file vault.pass
+        ```
+* **Note:** Suppose you have 1000 different roles and playbooks, then it is not recommeded that you can use use different password (vault.pass) for each role and playbook. For that you can do, **dev** enviroment you can use one password (vault.pass), **staging** enviroment you can use another password (vault.pass) and for **production** enviroment you can use another password (vault.pass). Also you can store your secrects in different files.
+
+## Plicy as Code:
+Policy as Code (PaC) in DevSecOps refers to the practice of defining and managing security policies through code. This approach enables automated, consistent, and scalable enforcement of security controls and compliance requirements across the software development lifecycle.<Br>
+
+* **Key Concepts of Policy as Code:**
+    * **Codification of Policies:** Security policies, compliance requirements, and governance rules are written in code, similar to how infrastructure is defined in Infrastructure as Code (IaC). Policies are typically defined using declarative languages or scripts.
+    * **Automation:** Policies are automatically enforced through CI/CD pipelines. Tools continuously monitor and ensure compliance with the defined policies.
+    * **Version Control:** Policies as code are stored in version control systems (e.g., Git), allowing for versioning, auditing, and change tracking. This ensures that any changes to policies are transparent and traceable.
+    * **Integration with DevOps Tools:** PaC integrates with DevOps tools and platforms, enabling seamless policy enforcement across development, testing, and production environments. Common integrations include CI/CD tools, configuration management tools, and cloud management platforms.
+
+* **Benefits of Policy as Code:**
+    * **Consistency and Accuracy:** Policies are applied consistently across environments, reducing the risk of human error. Automated checks and enforcement ensure that policies are adhered to accurately.
+    * **Scalability:** PaC enables scalable policy enforcement across multiple environments and numerous resources. It supports the rapid deployment and scaling of applications while maintaining compliance.
+    * **Auditability and Transparency:** Policies as code provide an auditable trail of policy definitions and changes. This transparency is crucial for compliance and regulatory requirements.
+    * **Shift-Left Security:** By integrating security policies early in the development process, PaC promotes the shift-left security approach. It helps identify and remediate security issues early, reducing the cost and impact of security vulnerabilities.
+
+* **Example Use Cases:**
+    * **Infrastructure Security:** Ensure that cloud resources (e.g., AWS S3 buckets, IAM roles) comply with security best practices. Automatically remediate non-compliant resources.
+    * **Application Security:** Enforce secure coding practices and compliance checks during the build and deployment stages. Prevent deployment of applications with known vulnerabilities.
+    * **Compliance and Governance:** Implement regulatory compliance requirements (e.g., GDPR, HIPAA) as code. Continuously monitor and enforce compliance across the organization.
