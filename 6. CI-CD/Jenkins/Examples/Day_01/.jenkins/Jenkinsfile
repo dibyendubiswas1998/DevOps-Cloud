@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerHub')  // Fetch the DockerHub credentials
+        APP_NAME = "dibyendubiswas1998/myapp"  // Define your Docker app name
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Cloning the repository...'
+                checkout scm
+            }
+        }
+
+        // Continuous Integration (CI)
+        stage("Continuous Integration") {
+            steps {
+                // Create a Docker Image
+                echo 'Creating a Docker Image...'
+                sh 'docker build -t $APP_NAME:latest .' // APP_NAME: is latest docker image
+
+                 // Login to DockerHub
+                echo 'Logging into DockerHub...'
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                
+                // Push the Docker Image to the DockerHub repository
+                echo 'Pushing the Docker Image to DockerHub...'
+                sh 'docker push $APP_NAME:latest' // APP_NAME: is latest docker image
+            }
+        }
+
+        // Continuous Deployment (CD)
+        stage("Continuous Deployment") {
+            steps {
+                // Clone the image from DockerHub
+                // echo 'Cloning the image from DockerHub...'
+                // sh 'docker pull $APP_NAME:latest'
+
+                // Run the Docker Container with port mapping
+                echo 'Running the Docker Container...'
+                sh 'docker run -d -p 8501:8501 $APP_NAME:latest' // APP_NAME: is latest docker image
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline finished!'
+        }
+        success {
+            echo 'Application deployed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the logs.'
+        }
+    }
+}
