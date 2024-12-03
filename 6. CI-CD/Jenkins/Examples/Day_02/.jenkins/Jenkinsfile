@@ -1,0 +1,65 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerHub')  // Fetch the DockerHub credentials
+        APP_NAME = "dibyendubiswas1998/myapp2"            // Define your Docker app name
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Cloning the repository...'
+                checkout scm
+            }
+        }
+
+        stage("Continuous Integration") {
+            steps {
+                // Stop any running containers
+                sh 'docker-compose down || true'
+                
+                // Remove any previously built images related to the app
+                echo 'Removing old Docker images...'
+                sh "docker images $APP_NAME -q | xargs -r docker rmi || true"  // Deletes all previous images for the app
+
+                // Create a new Docker Image
+                echo 'Building the Docker image...'
+                sh 'docker-compose build'
+
+                // List Docker images to verify the build
+                echo 'Listing Docker images...'
+                sh 'docker images'
+
+                // Login to DockerHub
+                echo 'Logging into DockerHub...'
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+
+                // Push the Docker image to DockerHub
+                echo 'Pushing the Docker image to DockerHub...'
+                sh 'docker push $APP_NAME:latest'
+            }
+        }
+
+        stage("Continuous Deployment") {
+            steps {
+                echo 'Deploying application using Docker Compose...'
+                
+                // Start the application using Docker Compose
+                sh 'docker-compose up -d'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline finished!'
+        }
+        success {
+            echo 'Application deployed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the logs.'
+        }
+    }
+}
